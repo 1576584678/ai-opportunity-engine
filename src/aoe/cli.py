@@ -16,6 +16,7 @@ from .llm import LLMClient, LLMConfig, LLMError
 from .pipeline import run_pipeline
 from .profiles import dump_profile, load_profile
 from .render import render_report
+from .render_html import render_html
 from .stages.extractor import extract_profile, gap_report
 
 
@@ -116,6 +117,10 @@ def _cmd_run(args: argparse.Namespace) -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(report, encoding="utf-8")
 
+    # 同一份结果再渲染一份自包含 HTML,方便直接打开看效果(docs/05 §7:明细要跟着结论一起给人看)。
+    html_path = out_path.with_suffix(".html")
+    html_path.write_text(render_html(result), encoding="utf-8")
+
     print(f"运行 ID:{result.run_id}")
     print(
         f"候选机会点 {len(result.all_opportunities)} 个,进入排序 {len(result.ranked)} 个,"
@@ -137,8 +142,21 @@ def _cmd_run(args: argparse.Namespace) -> int:
                 f"completion {stats['completion_tokens']} tokens"
             )
     print(f"报告已写入:{out_path}")
+    print(f"HTML 报告已写入:{html_path}")
     if run_dir:
         print(f"中间态已写入:{run_dir / result.run_id}")
+    return 0
+
+
+def _cmd_serve(args: argparse.Namespace) -> int:
+    from .webapp import serve
+
+    serve(
+        host=args.host,
+        port=args.port,
+        run_dir=Path(args.run_dir),
+        profile_dir=Path(args.profile_dir),
+    )
     return 0
 
 
@@ -181,6 +199,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _llm_options(run)
     run.set_defaults(func=_cmd_run)
+
+    serve = sub.add_parser("serve", help="启动本地网页界面(选画像、跑诊断、看报告)")
+    serve.add_argument("--host", default="127.0.0.1", help="默认只监听本机")
+    serve.add_argument("--port", type=int, default=8765)
+    serve.add_argument("--run-dir", default="work/runs", help="运行历史目录")
+    serve.add_argument("--profile-dir", default="data/profiles", help="画像目录")
+    serve.set_defaults(func=_cmd_serve)
 
     return parser
 

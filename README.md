@@ -26,6 +26,9 @@ python -m aoe validate data/profiles/retail_ecommerce_demo.json
 # 跑完整流水线,输出 Markdown 报告
 python -m aoe run data/profiles/retail_ecommerce_demo.json
 
+# 打开本地网页界面(选画像、点运行、直接看报告)
+python -m aoe serve
+
 # 测试
 python -m pytest
 ```
@@ -33,7 +36,11 @@ python -m pytest
 安装后也可以直接用 `aoe`(`console script`);若该脚本所在目录不在 `PATH` 上,
 或被企业应用控制策略拦截,用 `python -m aoe` 即可,二者等价。
 
-报告写入 `outputs/`,各阶段中间态写入 `work/runs/<run_id>/`(支持重跑与对比)。
+`serve` 启动后打开 `http://127.0.0.1:8765/`:页面上选业务画像、点「运行诊断」,
+跑完直接进报告页;页面是服务端渲染的自包含 HTML,不依赖前端构建工具。
+
+报告写入 `outputs/`(`.md` 与同名的单文件 `.html`,双击即可看),
+各阶段中间态写入 `work/runs/<run_id>/`(含画像快照 `run_meta.json`,支持重跑、对比与回放)。
 
 ## 这个 MVP 验证什么
 

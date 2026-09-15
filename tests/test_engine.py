@@ -435,15 +435,12 @@ def test_two_runs_in_same_second_go_to_different_dirs(
 ):
     """同一秒内跑两次不能撞名,否则后一次会静默覆盖前一次的中间态。"""
     from datetime import datetime as real_datetime
+    from datetime import timezone
 
     import aoe.pipeline as pipeline
 
-    class FrozenDatetime(real_datetime):
-        @classmethod
-        def now(cls, tz=None):
-            return real_datetime(2026, 1, 1, 12, 0, 0, tzinfo=tz)
-
-    monkeypatch.setattr(pipeline, "datetime", FrozenDatetime)
+    frozen = real_datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(pipeline, "_now_utc", lambda: frozen)
 
     first = run_pipeline(profile, KB, run_dir=tmp_path)
     second = run_pipeline(profile, KB, run_dir=tmp_path)
@@ -451,3 +448,30 @@ def test_two_runs_in_same_second_go_to_different_dirs(
     assert first.run_id != second.run_id
     assert (tmp_path / first.run_id / "s3_candidates.json").exists()
     assert (tmp_path / second.run_id / "s3_candidates.json").exists()
+
+
+def test_webapp_replays_persisted_run(profile: BusinessProfile, tmp_path: Path):
+    """落盘产物必须能重建出等价的 RunResult,否则网页界面只能重跑、不能回看。"""
+    from aoe.render_html import render_html
+    from aoe.webapp import list_runs, load_result, render_landing
+
+    result = run_pipeline(profile, KB, run_dir=tmp_path)
+
+    runs = list_runs(tmp_path)
+    assert [item["run_id"] for item in runs] == [result.run_id]
+    assert runs[0]["plans"] == len(result.plans)
+    assert runs[0]["passed"] == sum(1 for c in result.critiques if c.passed)
+
+    replayed = load_result(tmp_path / result.run_id)
+    assert replayed.profile.company == result.profile.company
+    assert len(replayed.ranked) == len(result.ranked)
+    assert [s.priority for s in replayed.ranked] == [s.priority for s in result.ranked]
+    assert [p.plan_id for p in replayed.plans] == [p.plan_id for p in result.plans]
+    assert [c.plan_id for c in replayed.critiques] == [
+        c.plan_id for c in result.critiques
+    ]
+
+    landing = render_landing(tmp_path, Path("data/profiles"))
+    assert result.run_id in landing
+    assert "跑一次诊断" in landing
+    assert "关键指标" in render_html(replayed)

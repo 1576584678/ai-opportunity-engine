@@ -76,10 +76,30 @@ LLM 路径的事实表(`build_fact_sheet`)对同样的字段、知识库案例�
 
 实测中修复的两个真实缺陷(已补回归测试):
 
-1. `04 §5.4` 排他性检查里集成方式按字面匹配,模型常写「RPA自动化」而标签是「RPA 自动化」,
+1. `06 §5` 自检项四对集成方式按字面匹配,模型常写「RPA自动化」而标签是「RPA 自动化」,
    空格差异导致误判。现比较前统一去空白。
 2. 自检项一原先只在 `before_process`/`after_process` 里找节点名,模型改写节点名即误判。
    现在扫描方案全文,并把失败反馈进 S7 重写循环,由模型自行改回逐字引用。
+
+### 2.7 本地界面用标准库而不是 Next.js + FastAPI
+
+`05 §3` 规划的前端是 Next.js + TypeScript、后端是 FastAPI。MVP 阶段先不引入:
+
+```bash
+python -m aoe serve        # 打开 http://127.0.0.1:8765/
+```
+
+理由有三个,都是「先验证再投入」:
+
+1. **这一层现在只需要单用户、本机、看结果**,还没有多用户与工作台那种交互复杂度,
+   引入前端构建链只会拖慢每一次验证。
+2. **零依赖**:用 Python 标准库 `http.server` 实现,`pip install -e .` 之后直接能跑,
+   部署到客户现场也不用带 Node 工具链。
+3. **页面即产物**:服务端渲染的 HTML 与 `outputs/*.html` 出自同一份渲染代码,
+   离线可看、可打印成 PDF,不需要再维护一套前端渲染逻辑。
+
+等到需要多用户、权限、方案编辑与版本对比(`05 §2` 的 Workspace)时再换 FastAPI + Next.js,
+届时 `webapp.load_result()` 与 `render_html()` 可以直接复用。
 
 ## 3. 运行
 
@@ -91,6 +111,9 @@ python -m aoe validate data/profiles/retail_ecommerce_demo.json
 
 # 跑完整流水线
 python -m aoe run data/profiles/retail_ecommerce_demo.json --out outputs/report.md
+
+# 打开本地网页界面:选画像 → 点运行 → 看报告
+python -m aoe serve
 
 # 测试
 python -m pytest
@@ -105,6 +128,10 @@ python -m pytest
 ## 4. 输出物
 
 - `outputs/<公司名>-report.md`:主报告(结论摘要 / 机会地图 / 排除清单 / 方案 / 自检 / 缺口)。
+- `outputs/<公司名>-report.html`:同一份结果的自包含 HTML,离线可看、可打印成 PDF,
+  与网页界面共用同一份渲染代码(`render_html.py`)。
+- `work/runs/<run_id>/run_meta.json`:画像快照与运行元数据,没有它就无法重建结果,
+  也就没有网页界面里的历史回看。
 - `work/runs/<run_id>/`:各阶段中间态 JSON,支持重跑与对比(`05 §7` 的可回放要求)。
   `run_id` 是秒级 UTC 时间戳;同一秒内并发跑多次会顺延为 `...Z-2`、`...Z-3`,
   目录用原子 `mkdir` 抢占,不会互相覆盖。

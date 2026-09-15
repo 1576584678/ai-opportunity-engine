@@ -31,9 +31,18 @@ MAX_PLANS_PER_NODE = 1
 def _serialize(payload):
     if hasattr(payload, "model_dump"):
         return payload.model_dump(mode="json")
+    if isinstance(payload, datetime):
+        return payload.isoformat()
+    if isinstance(payload, dict):
+        return {key: _serialize(value) for key, value in payload.items()}
     if isinstance(payload, (list, tuple)):
         return [_serialize(item) for item in payload]
     return payload
+
+
+def _now_utc() -> datetime:
+    """当前 UTC 时间。抽成函数是为了让测试能只替换「现在几点」,不动 datetime 这个类本身。"""
+    return datetime.now(timezone.utc)
 
 
 def _persist(run_path: Path, name: str, payload) -> None:
@@ -48,7 +57,7 @@ def _allocate_run_dir(run_dir: Path) -> tuple[str, Path]:
     run_id 是秒级 UTC 时间戳,同一秒内跑两次会撞名,后一次会静默覆盖前一次的中间态,
     破坏 docs/05 §7 的可回放要求。这里用 mkdir(exist_ok=False) 原子抢占,撞名就顺延 -2、-3。
     """
-    base = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    base = _now_utc().strftime("%Y%m%dT%H%M%SZ")
     for index in range(1, 1000):
         run_id = base if index == 1 else f"{base}-{index}"
         path = run_dir / run_id
@@ -80,7 +89,7 @@ def run_pipeline(
     if run_dir:
         run_id, run_path = _allocate_run_dir(run_dir)
     else:
-        run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        run_id = _now_utc().strftime("%Y%m%dT%H%M%SZ")
         run_path = None
 
     # ---- S3 候选生成 ----------------------------------------------------- #
@@ -185,7 +194,7 @@ def run_pipeline(
 
     result = RunResult(
         run_id=run_id,
-        generated_at=datetime.now(timezone.utc),
+        generated_at=_now_utc(),
         profile=profile,
         all_opportunities=filtered,
         ranked=scored,
@@ -196,6 +205,20 @@ def run_pipeline(
         composer=composer,
         usage=(client.ledger.summary() if client is not None else {}),
     )
+    if run_path:
+        # docs/05 §7「可回放」:产物要能被重新渲染与复算,所以画像与运行元数据也落盘。
+        _persist(
+            run_path,
+            "run_meta.json",
+            {
+                "run_id": result.run_id,
+                "generated_at": result.generated_at,
+                "profile": profile,
+                "composer": composer,
+                "unmatched_nodes": unmatched,
+                "gaps": gaps,
+            },
+        )
     return result
 
 
