@@ -252,6 +252,8 @@ class RiskBreakdown(BaseModel):
     hallucination_impact: float
     compliance_level: float
     responsibility_clarity: float
+    # 责任清晰度越高,风险越小,故参与相乘的是其反向因子 (6 - clarity)。
+    clarity_factor: float = 0.0
     raw: float
     total: float
     detail: dict = Field(default_factory=dict)

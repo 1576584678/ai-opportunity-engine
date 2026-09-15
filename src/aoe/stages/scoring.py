@@ -5,10 +5,10 @@
 - §6 输出必须是区间(悲观/中性/乐观),必须给回收周期与敏感性分析。
 - §6 每个输入量必须带来源标签与置信度。
 
-**与文档的一处工程偏差(已在 docs/05 记录):** 文档 §5.4 定义
-R = 幻觉影响面 × 合规等级 × 责任归属清晰度,三项各取 1-5 时 R 的动态范围是 1-125,
-会完全压过 C 的量纲,使优先级排序失去意义。本实现按几何平均归一化到 1-5:
-R = (a × b × c) ** (1/3)。公式形状不变,只是把量纲拉回与其他项可比。
+**§5.4 的实现口径(已回写进文档):**
+R = (幻觉影响面 × 合规等级 × (6 - 责任归属清晰度)) ** (1/3)。
+三项因子各取 1-5,直乘的动态范围 1-125 会压过以「元」为量纲的 C,故取几何平均归一化回 1-5;
+另外责任归属越清晰风险应越小,所以乘积里用的是反向因子 `6 - 清晰度`,而不是清晰度本身。
 """
 
 from __future__ import annotations
@@ -418,29 +418,33 @@ def compute_risk(
         clarity -= 1.0
     clarity = min(max(clarity, 1.0), 5.0)
 
-    raw = hallucination * compliance * clarity
+    # 责任归属越清晰,出错后的风险越小,因此进入风险乘积的是反向因子。
+    clarity_factor = 6.0 - clarity
+    raw = hallucination * compliance * clarity_factor
     total = raw ** (1.0 / 3.0)
 
     return RiskBreakdown(
         hallucination_impact=hallucination,
         compliance_level=compliance,
         responsibility_clarity=clarity,
+        clarity_factor=clarity_factor,
         raw=round(raw, 3),
         total=round(total, 4),
         detail={
             "formula": (
-                "R_raw = 幻觉影响面 × 合规等级 × 责任归属清晰度(各 1-5);"
-                "R = R_raw^(1/3) 归一化回 1-5"
+                "R = (幻觉影响面 × 合规等级 × (6 - 责任归属清晰度)) ** (1/3),"
+                "三项因子各取 1-5,结果回到 1-5"
             ),
             "has_pii": has_pii,
             "regulated": node.regulated,
+            "clarity_factor": clarity_factor,
             "compliance_hits": [
                 {"id": r.id, "level": r.level, "reason": r.reason, "remedy": r.remedy}
                 for r in hits
             ],
             "normalization_note": (
-                "文档 §5.4 未规定归一化方式。若直接相乘,R 的动态范围为 1-125,"
-                "会压过 C 的成本量纲。此处按几何平均归一化,保持公式形状不变。"
+                "docs/04 §5.4:R 与成本 C(元)同为分母,若三项直乘则动态范围 1-125,"
+                "会被 R 单独主导排序。故取几何平均归一化回 1-5,量纲与 V、F 可比。"
             ),
         },
     )

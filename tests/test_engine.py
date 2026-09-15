@@ -108,7 +108,7 @@ def test_priority_is_value_times_feasibility_over_cost_times_risk(
 
 
 def test_risk_is_normalized_to_one_to_five_scale(profile: BusinessProfile):
-    """未做归一化时 R 可达 125,会压过成本项,排序失去意义。"""
+    """R 必须归一化回 1-5,否则可达 125,会压过成本项让排序失去意义(docs/04 §5.4)。"""
     candidates, _ = generate_candidates(profile, KB)
     opp = next(o for o in candidates if o.node == "订单异常处理")
     node = next(n for n in profile.nodes if n.name == opp.node)
@@ -117,8 +117,21 @@ def test_risk_is_normalized_to_one_to_five_scale(profile: BusinessProfile):
     assert score.risk.raw == pytest.approx(
         score.risk.hallucination_impact
         * score.risk.compliance_level
-        * score.risk.responsibility_clarity
+        * score.risk.clarity_factor
     )
+    assert score.risk.clarity_factor == pytest.approx(6 - score.risk.responsibility_clarity)
+
+
+def test_clearer_responsibility_lowers_risk(profile: BusinessProfile):
+    """责任归属越清晰,风险 R 越小——因子必须取反向,直乘会把语义做反。"""
+    from aoe.stages.scoring import compute_risk
+
+    node = next(n for n in profile.nodes if n.name == "订单异常处理")
+    clear = node.model_copy(
+        update={"role": "客服主管", "requires_human_judgement": True}
+    )
+    vague = node.model_copy(update={"role": None, "requires_human_judgement": False})
+    assert compute_risk(clear, profile, KB).total < compute_risk(vague, profile, KB).total
 
 
 def test_value_scales_linearly_with_automation_coefficient(profile: BusinessProfile):
@@ -270,6 +283,27 @@ def test_critic_check_8_catches_model_written_number(profile: BusinessProfile):
     assert "99999" in check.detail
 
 
+def test_template_composer_registers_customer_quoted_numbers(profile: BusinessProfile):
+    """痛点原文里的数字是客户说的,不是模型编的,必须随客户文本一起登记。"""
+    candidates, _ = generate_candidates(profile, KB)
+    opp = next(o for o in candidates if o.node == "订单异常处理")
+    node = next(n for n in profile.nodes if n.name == opp.node).model_copy(
+        update={"pain_point": "去年漏发 12 单,单次赔付约 84 元"}
+    )
+    score, assumptions = score_opportunity(node, profile, opp, KB)
+    composed = compose_plan(
+        node=node,
+        profile=profile,
+        opportunity=opp,
+        score=score,
+        assumptions=assumptions,
+        kb=KB,
+        plan_id="PLAN-CLIENTTEXT",
+    )
+    assert "12" in composed.plan.before_process and "84" in composed.plan.before_process
+    assert check_8_no_fabricated_numbers(composed.plan, composed.numbers).passed
+
+
 def test_critic_check_5_requires_measurement_method(result):
     plan = result.plans[0].model_copy(
         update={
@@ -334,3 +368,28 @@ def test_all_sourced_values_carry_source_and_confidence(profile: BusinessProfile
     assert isinstance(profile.params.human_cost_annual_per_fte, Sourced)
     assert profile.params.human_cost_annual_per_fte.source in Source
     assert profile.params.human_cost_annual_per_fte.confidence in Confidence
+
+
+# --------------------------------------------------------------------------- #
+# 知识库:docs/07 §4 冷启动标准
+# --------------------------------------------------------------------------- #
+
+
+def test_scenario_library_meets_cold_start_bar():
+    """docs/07 §4:对任一目标行业都要能给出 10 个以上有行业针对性的机会点。"""
+    industries = sorted({s.industry for s in KB.scenarios})
+    counts = {i: sum(1 for s in KB.scenarios if s.industry == i) for i in industries}
+    assert len(counts) >= 3
+    assert all(count >= 10 for count in counts.values()), counts
+
+
+def test_scenarios_reference_known_capability_classes():
+    """场景库挂的能力类别必须真实存在于 L1 能力目录,否则会静默匹配不上。"""
+    known = {c.name for c in KB.capabilities}
+    unknown = sorted({s.capability_class for s in KB.scenarios} - known)
+    assert unknown == []
+
+
+def test_scenario_ids_are_unique():
+    ids = [s.id for s in KB.scenarios]
+    assert len(ids) == len(set(ids))

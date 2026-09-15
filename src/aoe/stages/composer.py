@@ -237,7 +237,9 @@ def compose_plan(
     )
 
     mode_label = INTEGRATION_LABELS[opportunity.integration_mode.value]
-    before = (
+    # 客户原文(痛点、角色、触发条件、输入输出)里的数字属于「客户提供」,
+    # 必须先用 reg_text 登记,否则 S8 会把客户自己说的数字误判成模型编造。
+    before = numbers.reg_text(
         f"节点「{node.name}」归属业务域「{node.domain}」,"
         f"由{node.role or '未指定角色'}负责,触发条件为“{node.trigger or '按固定周期'}”。"
         f"输入为{('、'.join(node.inputs) or '人工收集的信息')},"
@@ -246,7 +248,7 @@ def compose_plan(
         f"主要痛点:{node.pain_point or '未记录'}。"
     )
 
-    after = (
+    after = numbers.reg_text(
         f"在节点「{node.name}」引入「{opportunity.capability_class}」能力"
         f"({opportunity.capability}),以{mode_label}方式接入"
         f"{('、'.join(node.systems) or '现有作业环境')}。"
@@ -264,7 +266,7 @@ def compose_plan(
             data_lines.append(
                 f"{name}(载体:{src.carrier or '未记录'},可得性 {availability}%{pii_note})"
             )
-        data_plan = (
+        data_plan = numbers.reg_text(
             "数据方案:所需数据源为 " + "、".join(data_lines) + "。"
             f"优先通过{mode_label}方式获取;数据可得性不足的来源"
             "纳入前置数据治理范围,未达标前不进入验收。"
@@ -300,8 +302,9 @@ def compose_plan(
 
     compliance_hits = score.risk.detail.get("compliance_hits", [])
     if compliance_hits:
-        compliance_notes = "合规注意事项:" + ";".join(
-            f"[{hit['id']}]{hit['remedy']}" for hit in compliance_hits
+        compliance_notes = numbers.reg_text(
+            "合规注意事项:"
+            + ";".join(f"[{hit['id']}]{hit['remedy']}" for hit in compliance_hits)
         )
     else:
         compliance_notes = "合规注意事项:未命中合规库中的红线或约束条目;仍须按企业变更流程完成内部评审。"
@@ -317,7 +320,7 @@ def compose_plan(
         milestones=milestones_for(build_days, numbers),
         acceptance_metrics=_acceptance_metrics(node, profile, coef, numbers),
         assumptions=assumptions,
-        risks=_risks(node, score, coef, numbers),
+        risks=[numbers.reg_text(risk) for risk in _risks(node, score, coef, numbers)],
         compliance_notes=compliance_notes,
     )
     return ComposedPlan(plan=plan, numbers=numbers)

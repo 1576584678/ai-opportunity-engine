@@ -169,9 +169,10 @@ def _plan_detail(plan: Plan, score: Score, rank: int) -> list[str]:
     )
     lines.append(
         f"- 风险 R = 幻觉影响面 {score.risk.hallucination_impact:g} × 合规等级 "
-        f"{score.risk.compliance_level:g} × 责任清晰度 "
-        f"{score.risk.responsibility_clarity:g} = {score.risk.raw:g},归一化后 "
-        f"**{score.risk.total:.4f}**"
+        f"{score.risk.compliance_level:g} × 责任不清晰因子 "
+        f"{score.risk.clarity_factor:g}(由责任清晰度 "
+        f"{score.risk.responsibility_clarity:g} 取反)= {score.risk.raw:g},"
+        f"几何平均归一化后 **{score.risk.total:.4f}**"
     )
     lines.append("")
     if score.sensitivity:
