@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Build
+dist/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Project
+work/
+outputs/
+*.log
