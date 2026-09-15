@@ -1,0 +1,163 @@
+{
+  "company": "某区域连锁零售企业",
+  "industry": "零售电商",
+  "scale": { "headcount": 620, "revenue": 480000000, "sites": 38 },
+  "org_willingness": 0.75,
+  "missing": [],
+  "params": {
+    "human_cost_annual_per_fte": { "value": 180000, "source": "benchmark", "confidence": "medium", "note": "区域零售行业综合人力成本(含社保)" },
+    "discount_factor": 0.5,
+    "hours_per_fte_week": 40,
+    "top_n_plans": 6
+  },
+  "roles": [
+    { "name": "客服专员", "headcount": 12, "annual_cost_per_fte": { "value": 130000, "source": "benchmark", "confidence": "medium" } },
+    { "name": "内容运营", "headcount": 4, "annual_cost_per_fte": { "value": 190000, "source": "benchmark", "confidence": "medium" } },
+    { "name": "订单专员", "headcount": 6, "annual_cost_per_fte": { "value": 130000, "source": "benchmark", "confidence": "medium" } },
+    { "name": "计划专员", "headcount": 3, "annual_cost_per_fte": { "value": 210000, "source": "benchmark", "confidence": "low" } },
+    { "name": "门店督导", "headcount": 5, "annual_cost_per_fte": { "value": 170000, "source": "benchmark", "confidence": "medium" } },
+    { "name": "仓管员", "headcount": 9, "annual_cost_per_fte": { "value": 110000, "source": "benchmark", "confidence": "medium" } },
+    { "name": "营销专员", "headcount": 4, "annual_cost_per_fte": { "value": 180000, "source": "benchmark", "confidence": "medium" } },
+    { "name": "采购专员", "headcount": 5, "annual_cost_per_fte": { "value": 160000, "source": "benchmark", "confidence": "medium" } }
+  ],
+  "systems": [
+    { "name": "客服工单系统", "kind": "saas", "has_api": true, "data_exportable": true },
+    { "name": "商品管理系统", "kind": "purchased", "has_api": true, "data_exportable": true },
+    { "name": "订单中心", "kind": "self_dev", "has_api": true, "data_exportable": true },
+    { "name": "ERP", "kind": "purchased", "has_api": false, "data_exportable": true },
+    { "name": "BI 平台", "kind": "saas", "has_api": true, "data_exportable": true },
+    { "name": "WMS", "kind": "purchased", "has_api": false, "data_exportable": true },
+    { "name": "OA", "kind": "purchased", "has_api": true, "data_exportable": true },
+    { "name": "门店经营系统", "kind": "saas", "has_api": true, "data_exportable": true }
+  ],
+  "data_sources": [
+    { "name": "客服知识库", "carrier": "文档库", "availability": 0.9, "has_pii": false, "exportable": true },
+    { "name": "售后政策文档", "carrier": "PDF", "availability": 0.85, "has_pii": false, "exportable": true },
+    { "name": "商品参数表", "carrier": "结构化表", "availability": 0.95, "has_pii": false, "exportable": true },
+    { "name": "订单流水", "carrier": "数据库", "availability": 0.9, "has_pii": true, "exportable": true },
+    { "name": "历史销量", "carrier": "数仓表", "availability": 0.8, "has_pii": false, "exportable": true },
+    { "name": "库存快照", "carrier": "数仓表", "availability": 0.75, "has_pii": false, "exportable": true },
+    { "name": "送货单影像", "carrier": "扫描件", "availability": 0.7, "has_pii": false, "exportable": true },
+    { "name": "会员基本信息", "carrier": "数据库", "availability": 0.85, "has_pii": true, "exportable": true },
+    { "name": "审批记录", "carrier": "OA 表单", "availability": 0.9, "has_pii": false, "exportable": true },
+    { "name": "陈列巡检照片", "carrier": "图片", "availability": 0.6, "has_pii": false, "exportable": true },
+    { "name": "设备传感器数据", "carrier": "IoT 平台", "availability": 0.1, "has_pii": false, "exportable": false }
+  ],
+  "kpis": [
+    { "name": "首次响应时长", "current": "8 分钟", "target": "2 分钟", "node": "售后咨询应答" },
+    { "name": "订单异常处理时长", "current": "45 分钟", "target": "15 分钟", "node": "订单异常处理" },
+    { "name": "缺货率", "current": "6.5%", "target": "3%", "node": "SKU 补货预测" }
+  ],
+  "nodes": [
+    {
+      "name": "售后咨询应答", "domain": "客户服务", "role": "客服专员",
+      "trigger": "客户发起咨询", "inputs": ["客户问题描述", "订单信息"],
+      "outputs": ["回复内容", "工单分类结果"], "systems": ["客服工单系统"],
+      "hours_per_week": 160, "volume_per_month": 8000, "standardized": 0.85,
+      "pain_point": "重复问题占比高,新人上手慢,首响时长不稳定",
+      "data_required": ["客服知识库", "售后政策文档"],
+      "output_is_text_or_number": true, "requires_human_judgement": false,
+      "knowledge_intensive": false, "physical_action": false, "regulated": false,
+      "hallucination_impact": 2
+    },
+    {
+      "name": "商品详情页撰写", "domain": "商品运营", "role": "内容运营",
+      "trigger": "新品上架或活动改版", "inputs": ["商品参数", "卖点素材"],
+      "outputs": ["详情页文案"], "systems": ["商品管理系统"],
+      "hours_per_week": 60, "volume_per_month": 300, "standardized": 0.7,
+      "pain_point": "单 SKU 撰写耗时长,大促前产能不足",
+      "data_required": ["商品参数表"],
+      "output_is_text_or_number": true, "requires_human_judgement": false,
+      "knowledge_intensive": true, "physical_action": false, "regulated": false,
+      "hallucination_impact": 3
+    },
+    {
+      "name": "订单异常处理", "domain": "订单履约", "role": "订单专员",
+      "trigger": "异常订单进入待处理队列", "inputs": ["异常订单明细"],
+      "outputs": ["处理结论", "分流结果"], "systems": ["订单中心"],
+      "hours_per_week": 90, "volume_per_month": 1200, "standardized": 0.75,
+      "pain_point": "异常类型多,逐单判读耗时,处理口径不一致",
+      "data_required": ["订单流水"],
+      "output_is_text_or_number": true, "requires_human_judgement": true,
+      "knowledge_intensive": false, "physical_action": false, "regulated": false,
+      "hallucination_impact": 4
+    },
+    {
+      "name": "SKU 补货预测", "domain": "供应链", "role": "计划专员",
+      "trigger": "每周补货例会", "inputs": ["历史销量", "当前库存"],
+      "outputs": ["补货建议量"], "systems": ["ERP", "BI 平台"],
+      "hours_per_week": 24, "volume_per_month": 120, "standardized": 0.6,
+      "pain_point": "凭经验补货,畅销断货与滞销压库并存",
+      "data_required": ["历史销量", "库存快照"],
+      "output_is_text_or_number": true, "requires_human_judgement": true,
+      "knowledge_intensive": true, "physical_action": false, "regulated": false,
+      "hallucination_impact": 4
+    },
+    {
+      "name": "门店陈列巡检", "domain": "门店运营", "role": "门店督导",
+      "trigger": "每周巡检计划", "inputs": ["门店照片"],
+      "outputs": ["巡检结论", "整改清单"], "systems": ["门店经营系统"],
+      "hours_per_week": 40, "volume_per_month": 400, "standardized": 0.55,
+      "pain_point": "督导差旅成本高,只能抽检,标准执行不一致",
+      "data_required": ["陈列巡检照片"],
+      "output_is_text_or_number": true, "requires_human_judgement": false,
+      "knowledge_intensive": false, "physical_action": true, "regulated": false,
+      "hallucination_impact": 2
+    },
+    {
+      "name": "送货单与入库单录入", "domain": "仓储", "role": "仓管员",
+      "trigger": "供应商送货到仓", "inputs": ["送货单影像"],
+      "outputs": ["入库单", "三方核对结果"], "systems": ["WMS", "ERP"],
+      "hours_per_week": 70, "volume_per_month": 3000, "standardized": 0.9,
+      "pain_point": "手工录入易错,月底对账差异多",
+      "data_required": ["送货单影像"],
+      "output_is_text_or_number": true, "requires_human_judgement": false,
+      "knowledge_intensive": false, "physical_action": false, "regulated": false,
+      "hallucination_impact": 3
+    },
+    {
+      "name": "门店客流与客群识别", "domain": "营销", "role": "营销专员",
+      "trigger": "顾客进店", "inputs": ["门店摄像头画面"],
+      "outputs": ["客流统计", "客群标签"], "systems": ["门店经营系统"],
+      "hours_per_week": 30, "volume_per_month": 20000, "standardized": 0.65,
+      "pain_point": "希望识别进店顾客的人脸属性,做精准营销推荐",
+      "data_required": ["会员基本信息"],
+      "output_is_text_or_number": true, "requires_human_judgement": true,
+      "knowledge_intensive": false, "physical_action": false, "regulated": true,
+      "hallucination_impact": 5
+    },
+    {
+      "name": "跨系统审批流转", "domain": "采购", "role": "采购专员",
+      "trigger": "采购申请提交", "inputs": ["采购申请单"],
+      "outputs": ["审批流转结果"], "systems": ["OA", "ERP"],
+      "hours_per_week": 36, "volume_per_month": 600, "standardized": 0.8,
+      "pain_point": "跨系统重复录入,审批卡在中间环节无人跟进",
+      "data_required": ["审批记录"],
+      "output_is_text_or_number": true, "requires_human_judgement": false,
+      "knowledge_intensive": false, "physical_action": false, "regulated": false,
+      "hallucination_impact": 3
+    },
+    {
+      "name": "供应商临时议价", "domain": "采购", "role": "采购专员",
+      "trigger": "临时采购需求", "inputs": ["供应商报价"],
+      "outputs": ["议价结论"], "systems": [],
+      "hours_per_week": 20, "volume_per_month": 50, "standardized": 0.3,
+      "pain_point": "每次议价做法都不同,依赖个人经验判断",
+      "data_required": [],
+      "output_is_text_or_number": false, "requires_human_judgement": true,
+      "knowledge_intensive": true, "physical_action": false, "regulated": false,
+      "hallucination_impact": 4
+    },
+    {
+      "name": "生产设备故障预测", "domain": "设备维护", "role": "采购专员",
+      "trigger": "设备运行异常报警", "inputs": ["传感器时序数据"],
+      "outputs": ["故障预警"], "systems": [],
+      "hours_per_week": 16, "volume_per_month": 30, "standardized": 0.5,
+      "pain_point": "设备突发停机影响履约,缺少预测手段",
+      "data_required": ["设备传感器数据"],
+      "output_is_text_or_number": true, "requires_human_judgement": false,
+      "knowledge_intensive": true, "physical_action": false, "regulated": false,
+      "hallucination_impact": 3
+    }
+  ]
+}

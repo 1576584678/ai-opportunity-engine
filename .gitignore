@@ -9,6 +9,7 @@ venv/
 # Build
 dist/
 build/
+.pytest_cache/
 .next/
 out/
 

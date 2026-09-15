@@ -1,0 +1,249 @@
+{
+  "layer": "L1",
+  "version": "0.1.0",
+  "updated_at": "2026-09-15",
+  "note": "AI 能力目录。coef_range 来自 docs/04-core-methodology.md §2;可自动化系数只允许下探,不允许超过本表上限。",
+  "classes": [
+    {
+      "name": "信息抽取",
+      "coef_range": [
+        0.8,
+        0.95
+      ],
+      "base_coef": 0.8,
+      "typical": [
+        "单据解析",
+        "结构化录入",
+        "文档信息提取"
+      ],
+      "node_keywords": [
+        "录入",
+        "单据",
+        "发票",
+        "报销",
+        "资料",
+        "登记",
+        "建档",
+        "台账",
+        "扫描",
+        "对账",
+        "核对",
+        "填写",
+        "汇总表"
+      ],
+      "model_tier": "fast",
+      "build_person_days": 12,
+      "calls_per_unit": 1.0,
+      "data_dependency": "high"
+    },
+    {
+      "name": "内容生成",
+      "coef_range": [
+        0.6,
+        0.9
+      ],
+      "base_coef": 0.8,
+      "typical": [
+        "文案",
+        "报告",
+        "回复草稿",
+        "代码"
+      ],
+      "node_keywords": [
+        "文案",
+        "撰写",
+        "报告",
+        "回复",
+        "话术",
+        "稿件",
+        "说明",
+        "编辑",
+        "通知",
+        "方案",
+        "详情页",
+        "商品描述"
+      ],
+      "model_tier": "strong",
+      "build_person_days": 10,
+      "calls_per_unit": 1.0,
+      "data_dependency": "medium"
+    },
+    {
+      "name": "分类与判定",
+      "coef_range": [
+        0.7,
+        0.9
+      ],
+      "base_coef": 0.8,
+      "typical": [
+        "意图识别",
+        "风险分级",
+        "异常检测"
+      ],
+      "node_keywords": [
+        "分类",
+        "判定",
+        "审核",
+        "分级",
+        "识别",
+        "打标",
+        "异常",
+        "风控",
+        "质检判定",
+        "筛选",
+        "归档"
+      ],
+      "model_tier": "fast",
+      "build_person_days": 12,
+      "calls_per_unit": 1.0,
+      "data_dependency": "high"
+    },
+    {
+      "name": "预测与推荐",
+      "coef_range": [
+        0.4,
+        0.7
+      ],
+      "base_coef": 0.8,
+      "typical": [
+        "需求预测",
+        "定价建议",
+        "人群推荐"
+      ],
+      "node_keywords": [
+        "预测",
+        "推荐",
+        "排产",
+        "补货",
+        "备货",
+        "定价",
+        "选品",
+        "配额",
+        "调度计划",
+        "销量预估",
+        "议价"
+      ],
+      "model_tier": "fast",
+      "build_person_days": 20,
+      "calls_per_unit": 0.2,
+      "data_dependency": "high"
+    },
+    {
+      "name": "问答与检索",
+      "coef_range": [
+        0.7,
+        0.9
+      ],
+      "base_coef": 0.8,
+      "typical": [
+        "知识库问答",
+        "政策查询",
+        "内部检索"
+      ],
+      "node_keywords": [
+        "咨询",
+        "答疑",
+        "查询",
+        "客服",
+        "问询",
+        "政策",
+        "规范",
+        "培训",
+        "知识",
+        "找资料",
+        "解答"
+      ],
+      "model_tier": "fast",
+      "build_person_days": 15,
+      "calls_per_unit": 1.0,
+      "data_dependency": "medium"
+    },
+    {
+      "name": "编排与执行",
+      "coef_range": [
+        0.3,
+        0.6
+      ],
+      "base_coef": 0.6,
+      "typical": [
+        "多步 Agent",
+        "跨系统操作",
+        "RPA 增强"
+      ],
+      "node_keywords": [
+        "流转",
+        "审批",
+        "下单",
+        "录系统",
+        "跨系统",
+        "同步",
+        "批量处理",
+        "工单",
+        "派单",
+        "跟进",
+        "对账处理"
+      ],
+      "model_tier": "strong",
+      "build_person_days": 25,
+      "calls_per_unit": 2.0,
+      "data_dependency": "high"
+    },
+    {
+      "name": "感知类",
+      "coef_range": [
+        0.5,
+        0.85
+      ],
+      "base_coef": 0.7,
+      "typical": [
+        "视觉质检",
+        "语音转写",
+        "图像识别"
+      ],
+      "node_keywords": [
+        "质检",
+        "巡检",
+        "拍照",
+        "录音",
+        "图像",
+        "监控",
+        "验收",
+        "盘点",
+        "识别"
+      ],
+      "model_tier": "fast",
+      "build_person_days": 22,
+      "calls_per_unit": 1.0,
+      "data_dependency": "high"
+    },
+    {
+      "name": "物理动作",
+      "coef_range": [
+        0.05,
+        0.2
+      ],
+      "base_coef": 0.2,
+      "typical": [
+        "搬运",
+        "装配",
+        "现场作业"
+      ],
+      "node_keywords": [
+        "搬运",
+        "装配",
+        "打包",
+        "分拣",
+        "现场作业",
+        "配送",
+        "安装",
+        "清洁",
+        "上架",
+        "码放"
+      ],
+      "model_tier": "none",
+      "build_person_days": 40,
+      "calls_per_unit": 0.0,
+      "data_dependency": "low"
+    }
+  ]
+}

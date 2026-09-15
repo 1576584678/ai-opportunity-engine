@@ -8,7 +8,39 @@
 
 ## 当前状态
 
-`阶段: 规划` —— 本仓库目前只包含规划文档,尚无代码。下一步见 `docs/08-roadmap.md` 的 M0 里程碑。
+`阶段: MVP 内核可用` —— 确定性内核已实现并可端到端运行,尚未接入大模型,也尚未验证付费。
+
+- **已实现:** 候选机会点生成 → 规则过滤与合规红线 → 评分/ROI/敏感性 → 方案组装 → 自检 → Markdown 导出。
+  全流程不需要任何模型 API Key 即可运行。详见 `docs/10-mvp-implementation.md`。
+- **未实现:** 自由文本采集与建模(S1/S2)、向量检索(S6)、用强模型撰写方案(S7 的 LLM 版本)。
+- **未验证:** 付费意愿。`docs/08-roadmap.md` 的 M0 仍然没有完成。
+
+## 快速开始
+
+```bash
+pip install -e ".[dev]"
+
+# 校验业务画像
+python -m aoe validate data/profiles/retail_ecommerce_demo.json
+
+# 跑完整流水线,输出 Markdown 报告
+python -m aoe run data/profiles/retail_ecommerce_demo.json
+
+# 测试
+python -m pytest
+```
+
+安装后也可以直接用 `aoe`(`console script`);若该脚本所在目录不在 `PATH` 上,
+或被企业应用控制策略拦截,用 `python -m aoe` 即可,二者等价。
+
+报告写入 `outputs/`,各阶段中间态写入 `work/runs/<run_id>/`(支持重跑与对比)。
+
+## 这个 MVP 验证什么
+
+验证**确定性内核能不能产出可信、可追溯的结论**,而不是「模型能不能写方案」。
+
+引擎的立场是:算术、评分、合规判定、ROI 区间全部交给代码,模型只负责语义与文字。
+所以方案正文里的每一个数字都必须经过显式登记,自检会反向扫描并把未经登记的数字判为编造打回。
 
 ## 文档索引
 
@@ -23,6 +55,7 @@
 | [07-knowledge-base](docs/07-knowledge-base.md) | 知识库分层与冷启动、检索策略、数据飞轮 |
 | [08-roadmap](docs/08-roadmap.md) | MVP 范围、里程碑、迭代路线、资源估算 |
 | [09-risks-and-metrics](docs/09-risks-and-metrics.md) | 风险清单与缓解、北极星指标、go/no-go 标准 |
+| [10-mvp-implementation](docs/10-mvp-implementation.md) | **实际代码实现**与文档设计的对应关系、工程偏差、运行方式、下一步 |
 
 ## 核心判断(必读)
 
@@ -30,6 +63,24 @@
 2. **护城河来自三件事:** 行业场景库与 ROI 基准数据、落地效果回收闭环、方案到可运行 Agent 的交付能力。
 3. **产品定位应为「卖方的售前提效引擎 + 落地入口」**,而非面向终端中小企业的方案生成 SaaS。
 4. **先验证付费,再写代码。** 详见 `docs/02-business-model.md` 的验证实验。
+
+## 代码结构
+
+```
+src/aoe/
+  models.py            结构化中间层 Schema(docs/04 §1、docs/06 §3)
+  knowledge.py         知识库加载与检索(L1/L2/L4/L6)
+  profiles.py          业务画像读写
+  stages/candidates.py S3 候选机会点生成
+  stages/rules.py      S4 适用性过滤与合规红线
+  stages/scoring.py    S5 评分、ROI 区间、敏感性分析(纯代码,不含模型调用)
+  stages/composer.py   S7 方案组装(含数字登记表)
+  stages/critic.py     S8 十项自检
+  render.py            S9 Markdown 渲染
+  pipeline.py          流水线编排与中间态落盘
+data/knowledge/        知识库:L1 能力目录 / L2 行业场景 / L4 成本价格 / L6 合规
+data/profiles/         业务画像样例
+```
 
 ## 命名
 

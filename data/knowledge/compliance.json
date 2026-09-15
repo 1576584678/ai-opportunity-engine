@@ -1,0 +1,58 @@
+{
+  "layer": "L6",
+  "version": "0.1.0",
+  "updated_at": "2026-09-15",
+  "source": "internal",
+  "confidence": "medium",
+  "note": "合规库。level=redline 的机会点一票否决,不进入优先级排序(docs/04 §5.5),单独输出并给出整改前提。",
+  "rules": [
+    {
+      "id": "CMP-PII-01",
+      "level": "redline",
+      "industry": null,
+      "match": { "keywords": ["身份证", "人脸", "生物特征", "指纹", "声纹", "定位轨迹"], "requires_pii": true },
+      "reason": "涉及敏感个人信息处理,未通过个人信息保护影响评估前不得实施",
+      "remedy": "完成个人信息保护影响评估(PIPIA),取得单独同意,并通过去标识化/最小化改造后重新评估"
+    },
+    {
+      "id": "CMP-PII-02",
+      "level": "redline",
+      "industry": null,
+      "match": { "keywords": ["征信", "借贷", "放贷", "授信", "反洗钱"], "requires_pii": true },
+      "reason": "涉及金融信用类判定,属于强监管场景,需持牌与合规审查",
+      "remedy": "由持牌主体主导,完成监管报备与算法可解释性说明后重新评估"
+    },
+    {
+      "id": "CMP-MED-01",
+      "level": "redline",
+      "industry": "医疗健康",
+      "match": { "keywords": ["诊断", "处方", "病历", "影像判读", "用药建议"], "requires_pii": true },
+      "reason": "涉及诊疗决策,不得由 AI 独立给出诊断/处方结论",
+      "remedy": "改为「辅助提示 + 医生确认」形态,并明确责任归属后方可实施"
+    },
+    {
+      "id": "CMP-FIN-01",
+      "level": "guard",
+      "industry": null,
+      "match": { "keywords": ["报销", "付款", "资金", "结算", "开票"], "requires_pii": false },
+      "reason": "涉及资金动作,必须保留人工复核与审计留痕",
+      "remedy": "在流程中保留人工复核节点,全量记录操作日志"
+    },
+    {
+      "id": "CMP-HR-01",
+      "level": "guard",
+      "industry": null,
+      "match": { "keywords": ["绩效", "考核", "录用", "辞退", "晋升"], "requires_pii": true },
+      "reason": "涉及劳动者权益,算法结论需可申诉",
+      "remedy": "提供人工申诉通道与判定依据留痕"
+    },
+    {
+      "id": "CMP-GEN-01",
+      "level": "guard",
+      "industry": null,
+      "match": { "keywords": ["对外发布", "客户通知", "合同条款", "报价单"], "requires_pii": false },
+      "reason": "输出直接对外,错误影响面大",
+      "remedy": "增加人工终审环节并保留版本记录"
+    }
+  ]
+}

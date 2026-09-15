@@ -1,0 +1,367 @@
+{
+  "company": "未命名企业",
+  "industry": "制造",
+  "scale": {
+    "headcount": 780,
+    "revenue": 680000000.0,
+    "sites": 2
+  },
+  "nodes": [
+    {
+      "name": "来料检验",
+      "domain": "质量",
+      "trigger": "供应商来料到厂",
+      "inputs": [
+        "供应商来料",
+        "来料检验标准PDF"
+      ],
+      "outputs": [
+        "检验记录",
+        "检验判定结果"
+      ],
+      "role": "质检员",
+      "systems": [
+        "文件服务器"
+      ],
+      "hours_per_week": 210.0,
+      "volume_per_month": 3600.0,
+      "pain_point": "漏检率居高不下,去年漏检流出到产线造成返工和停线损失约80多万元;边界情况依赖老质检员经验判断",
+      "standardized": 0.7,
+      "data_required": [
+        "来料检验标准PDF",
+        "来料检验记录扫描件"
+      ],
+      "output_is_text_or_number": true,
+      "requires_human_judgement": true,
+      "knowledge_intensive": true,
+      "physical_action": true,
+      "regulated": false,
+      "hallucination_impact": 5,
+      "risk_event": null,
+      "revenue_uplift": null
+    },
+    {
+      "name": "送货单录入与三方核对",
+      "domain": "仓储",
+      "trigger": "供应商送货到厂",
+      "inputs": [
+        "纸质送货单",
+        "采购订单"
+      ],
+      "outputs": [
+        "入库单",
+        "三方核对结果"
+      ],
+      "role": "仓管员",
+      "systems": [
+        "ERP",
+        "文件服务器"
+      ],
+      "hours_per_week": 90.0,
+      "volume_per_month": 4500.0,
+      "pain_point": "纯手工录入,错录漏录频发,月底对账经常要花好几天",
+      "standardized": 0.85,
+      "data_required": [
+        "送货单扫描件",
+        "历史采购订单"
+      ],
+      "output_is_text_or_number": true,
+      "requires_human_judgement": false,
+      "knowledge_intensive": false,
+      "physical_action": false,
+      "regulated": false,
+      "hallucination_impact": 3,
+      "risk_event": null,
+      "revenue_uplift": null
+    },
+    {
+      "name": "设备点检与记录录入",
+      "domain": "设备",
+      "trigger": "每班次点检",
+      "inputs": [
+        "设备点检表"
+      ],
+      "outputs": [
+        "设备点检记录"
+      ],
+      "role": "车间工人/设备科人员",
+      "systems": [
+        "点检系统",
+        "文件服务器"
+      ],
+      "hours_per_week": 20.0,
+      "volume_per_month": 0.0,
+      "pain_point": "点检记录为纸质,月底由设备科集中录入;设备突发故障无预警,去年非计划停机40多次,平均每次损失约1.5万元",
+      "standardized": 0.8,
+      "data_required": [
+        "设备点检记录"
+      ],
+      "output_is_text_or_number": true,
+      "requires_human_judgement": false,
+      "knowledge_intensive": false,
+      "physical_action": true,
+      "regulated": false,
+      "hallucination_impact": 3,
+      "risk_event": {
+        "frequency_per_year": {
+          "value": 40.0,
+          "source": "user",
+          "confidence": "high",
+          "note": "去年非计划停机40多次"
+        },
+        "loss_per_event": {
+          "value": 15000.0,
+          "source": "user",
+          "confidence": "high",
+          "note": "平均每次损失约1.5万元"
+        },
+        "expected_reduction": 0.3
+      },
+      "revenue_uplift": null
+    },
+    {
+      "name": "工艺文件与质量报告撰写",
+      "domain": "工艺",
+      "trigger": "工艺变更或质量报告需求",
+      "inputs": [
+        "MES生产质量数据"
+      ],
+      "outputs": [
+        "工艺文件",
+        "工艺变更单",
+        "质量报告"
+      ],
+      "role": "工艺工程师",
+      "systems": [
+        "MES"
+      ],
+      "hours_per_week": 30.0,
+      "volume_per_month": 0.0,
+      "pain_point": "报告与工艺变更单撰写占用工程师大量工时",
+      "standardized": 0.5,
+      "data_required": [
+        "MES生产质量数据"
+      ],
+      "output_is_text_or_number": true,
+      "requires_human_judgement": true,
+      "knowledge_intensive": true,
+      "physical_action": false,
+      "regulated": false,
+      "hallucination_impact": 3,
+      "risk_event": null,
+      "revenue_uplift": null
+    },
+    {
+      "name": "采购议价",
+      "domain": "采购",
+      "trigger": "供应商报价或年度议价",
+      "inputs": [
+        "供应商报价",
+        "历史采购订单"
+      ],
+      "outputs": [
+        "议价结果",
+        "采购价格"
+      ],
+      "role": "采购经理",
+      "systems": [
+        "ERP"
+      ],
+      "hours_per_week": 0.0,
+      "volume_per_month": 0.0,
+      "pain_point": "每个供应商议价做法都不一样,主要依赖采购经理个人经验;客户明确表示该环节暂不打算改动",
+      "standardized": 0.2,
+      "data_required": [
+        "历史采购订单"
+      ],
+      "output_is_text_or_number": true,
+      "requires_human_judgement": true,
+      "knowledge_intensive": true,
+      "physical_action": false,
+      "regulated": false,
+      "hallucination_impact": 4,
+      "risk_event": null,
+      "revenue_uplift": null
+    }
+  ],
+  "systems": [
+    {
+      "name": "ERP",
+      "kind": "purchased",
+      "has_api": false,
+      "data_exportable": true
+    },
+    {
+      "name": "MES",
+      "kind": "self_dev",
+      "has_api": true,
+      "data_exportable": true
+    },
+    {
+      "name": "点检系统",
+      "kind": "saas",
+      "has_api": true,
+      "data_exportable": true
+    },
+    {
+      "name": "文件服务器",
+      "kind": "purchased",
+      "has_api": false,
+      "data_exportable": true
+    }
+  ],
+  "data_sources": [
+    {
+      "name": "来料检验标准PDF",
+      "carrier": "文件服务器",
+      "availability": 0.9,
+      "has_pii": false,
+      "exportable": true
+    },
+    {
+      "name": "来料检验记录扫描件",
+      "carrier": "文件服务器",
+      "availability": 0.8,
+      "has_pii": false,
+      "exportable": true
+    },
+    {
+      "name": "送货单扫描件",
+      "carrier": "文件服务器",
+      "availability": 0.8,
+      "has_pii": false,
+      "exportable": true
+    },
+    {
+      "name": "设备点检记录",
+      "carrier": "纸质表单/文件服务器",
+      "availability": 0.6,
+      "has_pii": false,
+      "exportable": true
+    },
+    {
+      "name": "历史采购订单",
+      "carrier": "ERP",
+      "availability": 0.9,
+      "has_pii": false,
+      "exportable": true
+    },
+    {
+      "name": "MES生产质量数据",
+      "carrier": "MES",
+      "availability": 0.9,
+      "has_pii": false,
+      "exportable": true
+    }
+  ],
+  "roles": [
+    {
+      "name": "质检员",
+      "headcount": 6,
+      "annual_cost_per_fte": {
+        "value": 140000.0,
+        "source": "user",
+        "confidence": "high",
+        "note": "财务给的人均年薪14万"
+      }
+    },
+    {
+      "name": "仓管员",
+      "headcount": 5,
+      "annual_cost_per_fte": {
+        "value": 140000.0,
+        "source": "user",
+        "confidence": "high",
+        "note": "财务给的人均年薪14万"
+      }
+    },
+    {
+      "name": "设备科人员",
+      "headcount": 2,
+      "annual_cost_per_fte": {
+        "value": 140000.0,
+        "source": "user",
+        "confidence": "high",
+        "note": "财务给的人均年薪14万"
+      }
+    },
+    {
+      "name": "工艺工程师",
+      "headcount": 3,
+      "annual_cost_per_fte": {
+        "value": 140000.0,
+        "source": "user",
+        "confidence": "high",
+        "note": "财务给的人均年薪14万"
+      }
+    },
+    {
+      "name": "采购经理",
+      "headcount": 1,
+      "annual_cost_per_fte": {
+        "value": 140000.0,
+        "source": "user",
+        "confidence": "high",
+        "note": "财务给的人均年薪14万"
+      }
+    }
+  ],
+  "kpis": [
+    {
+      "name": "来料检验漏检率",
+      "current": "描述未给出具体数值,仅说明漏检率一直下不来",
+      "target": "",
+      "node": "来料检验"
+    },
+    {
+      "name": "漏检流出造成的年度损失",
+      "current": "约80多万元/年",
+      "target": "",
+      "node": "来料检验"
+    },
+    {
+      "name": "单据录入准确率",
+      "current": "描述未给出具体数值,仅说明错录漏录经常发生",
+      "target": "",
+      "node": "送货单录入与三方核对"
+    },
+    {
+      "name": "月底对账周期",
+      "current": "经常要对好几天",
+      "target": "",
+      "node": "送货单录入与三方核对"
+    },
+    {
+      "name": "非计划停机次数",
+      "current": "去年40多次",
+      "target": "",
+      "node": "设备点检与记录录入"
+    },
+    {
+      "name": "单次非计划停机损失",
+      "current": "平均约1.5万元",
+      "target": "",
+      "node": "设备点检与记录录入"
+    }
+  ],
+  "org_willingness": 0.9,
+  "params": {
+    "human_cost_annual_per_fte": {
+      "value": 140000.0,
+      "source": "user",
+      "confidence": "high",
+      "note": "客户财务提供的人均年薪"
+    },
+    "discount_factor": 0.5,
+    "hours_per_fte_week": 40.0,
+    "top_n_plans": 8
+  },
+  "missing": [
+    "来料检验漏检流出事件的年发生次数(仅有年度总损失80多万元的合计口径)",
+    "来料检验当前漏检率基线数值",
+    "设备点检的月记录条数(每班次点检,但班次数未给出)",
+    "工艺文件与质量报告的月产出量(仅给出每周30小时工时)",
+    "采购议价环节的投入工时与年议价单量",
+    "送货单录入当前的错录/漏录率基线数值"
+  ]
+}

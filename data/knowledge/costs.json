@@ -1,0 +1,38 @@
+{
+  "layer": "L4",
+  "version": "0.1.0",
+  "updated_at": "2026-09-15",
+  "source": "assumed",
+  "confidence": "medium",
+  "note": "成本与价格库。全部为占位基准,上线前必须用真实项目数据校准(docs/07 §5 数据飞轮)。",
+  "currency": "CNY",
+  "person_day_price": 2400,
+  "maintenance_rate": 0.15,
+  "retry_factor": 1.25,
+  "integration_person_days": {
+    "api": 6,
+    "rpa": 10,
+    "embedded": 14,
+    "standalone": 18
+  },
+  "integration_coef_multiplier": {
+    "api": 1.0,
+    "rpa": 1.15,
+    "embedded": 1.25,
+    "standalone": 1.2
+  },
+  "model_pricing_per_1k_tokens": {
+    "fast": { "input": 0.001, "output": 0.002 },
+    "strong": { "input": 0.008, "output": 0.024 },
+    "embedding": { "input": 0.0001, "output": 0.0 },
+    "none": { "input": 0.0, "output": 0.0 }
+  },
+  "tokens_per_call": {
+    "fast": { "input": 1500, "output": 400 },
+    "strong": { "input": 4000, "output": 1500 },
+    "embedding": { "input": 300, "output": 0 },
+    "none": { "input": 0, "output": 0 }
+  },
+  "human_cost_annual_per_fte": 180000,
+  "build_person_days_cap": 40
+}
