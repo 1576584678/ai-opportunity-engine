@@ -185,6 +185,7 @@ def test_priority_guards_against_zero_cost():
         hallucination_impact=1,
         compliance_level=1,
         responsibility_clarity=1,
+        clarity_factor=5,
         raw=1,
         total=1,
     )
@@ -302,6 +303,35 @@ def test_template_composer_registers_customer_quoted_numbers(profile: BusinessPr
     )
     assert "12" in composed.plan.before_process and "84" in composed.plan.before_process
     assert check_8_no_fabricated_numbers(composed.plan, composed.numbers).passed
+
+
+def test_llm_fact_sheet_registers_every_text_number(profile: BusinessProfile):
+    """事实表里所有文本(客户原文 + 知识库案例)的数字都必须已登记,否则模型一引用就被判编造。"""
+    from aoe.stages.composer_llm import build_fact_sheet
+
+    candidates, _ = generate_candidates(profile, KB)
+    opp = next(o for o in candidates if o.node == "订单异常处理")
+    node = next(n for n in profile.nodes if n.name == opp.node).model_copy(
+        update={"pain_point": "去年漏发 12 单,单次赔付约 84 元"}
+    )
+    score, assumptions = score_opportunity(node, profile, opp, KB)
+    numbers = NumberRegistry()
+    fact = build_fact_sheet(node, profile, opp, score, KB, numbers, assumptions)
+
+    leaks: list[str] = []
+
+    def walk(value: object) -> None:
+        if isinstance(value, str):
+            leaks.extend(numbers.unregistered(value))
+        elif isinstance(value, dict):
+            for item in value.values():
+                walk(item)
+        elif isinstance(value, list):
+            for item in value:
+                walk(item)
+
+    walk(fact)
+    assert leaks == []
 
 
 def test_critic_check_5_requires_measurement_method(result):

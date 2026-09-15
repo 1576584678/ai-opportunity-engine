@@ -91,14 +91,16 @@ def build_fact_sheet(
     unit_hours = (node.hours_per_week / weekly_volume) if weekly_volume > 0 else 0.0
 
     fact: dict = {
-        "节点": node.name,
-        "业务域": node.domain,
-        "执行角色": node.role or "未指定",
-        "触发条件": node.trigger or "按固定周期",
-        "输入": node.inputs,
-        "输出": node.outputs,
-        "痛点": node.pain_point or "未记录",
-        "涉及系统": node.systems,
+        # 客户原文里的数字是「客户提供的」,不是模型编的,必须随文本一起登记;
+        # 模型自己写出来的文字永远不登记,只做 S8 反向扫描。
+        "节点": numbers.reg_text(node.name),
+        "业务域": numbers.reg_text(node.domain),
+        "执行角色": numbers.reg_text(node.role or "未指定"),
+        "触发条件": numbers.reg_text(node.trigger or "按固定周期"),
+        "输入": [numbers.reg_text(item) for item in node.inputs],
+        "输出": [numbers.reg_text(item) for item in node.outputs],
+        "痛点": numbers.reg_text(node.pain_point or "未记录"),
+        "涉及系统": [numbers.reg_text(item) for item in node.systems],
         "集成方式": INTEGRATION_LABELS[opportunity.integration_mode.value],
         "能力类别": opportunity.capability_class,
         "具体能力": opportunity.capability,
@@ -149,8 +151,8 @@ def build_fact_sheet(
     data_map = {d.name: d for d in profile.data_sources}
     fact["数据源"] = [
         {
-            "名称": name,
-            "载体": data_map[name].carrier or "未记录",
+            "名称": numbers.reg_text(name),
+            "载体": numbers.reg_text(data_map[name].carrier or "未记录"),
             "可得性百分比": numbers.reg(data_map[name].availability * 100, "{:.0f}"),
             "含个人信息": data_map[name].has_pii,
         }
@@ -168,7 +170,7 @@ def build_fact_sheet(
             {
                 "id": numbers.reg_text(scenario.id),
                 "标题": numbers.reg_text(scenario.title),
-                "做法": scenario.content,
+                "做法": numbers.reg_text(scenario.content),
             }
         )
     fact["可引用知识库案例"] = cases or "本行业暂无可引用案例"
@@ -178,8 +180,8 @@ def build_fact_sheet(
         [
             {
                 "id": numbers.reg_text(hit["id"]),
-                "要求": hit["reason"],
-                "整改前提": hit["remedy"],
+                "要求": numbers.reg_text(hit["reason"]),
+                "整改前提": numbers.reg_text(hit["remedy"]),
             }
             for hit in compliance_hits
         ]

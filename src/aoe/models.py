@@ -253,7 +253,8 @@ class RiskBreakdown(BaseModel):
     compliance_level: float
     responsibility_clarity: float
     # 责任清晰度越高,风险越小,故参与相乘的是其反向因子 (6 - clarity)。
-    clarity_factor: float = 0.0
+    # 不给默认值:0 落在该因子的合法区间 (1-5) 之外,漏传会静默算出错误的风险值。
+    clarity_factor: float
     raw: float
     total: float
     detail: dict = Field(default_factory=dict)
