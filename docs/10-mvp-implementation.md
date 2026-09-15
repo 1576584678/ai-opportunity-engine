@@ -101,6 +101,32 @@ python -m aoe serve        # 打开 http://127.0.0.1:8765/
 等到需要多用户、权限、方案编辑与版本对比(`05 §2` 的 Workspace)时再换 FastAPI + Next.js,
 届时 `webapp.load_result()` 与 `render_html()` 可以直接复用。
 
+### 2.8 数据导入按「先校验、后落盘」,画像名用相对路径
+
+界面上的导入分两条路,对应「客户给的是文字」和「客户给的是结构化数据」两种现实情况:
+
+| 入口 | 输入 | 处理 | 落盘 |
+| --- | --- | --- | --- |
+| A 业务描述 | 按提纲写的自由文本(粘贴或 `.txt`) | S2 抽成 `BusinessProfile` | `data/profiles/descriptions/uploads/<slug>.txt` + `uploads/<slug>.json` |
+| B 画像 JSON | 按模板填的 JSON(粘贴或 `.json`) | `BusinessProfile.model_validate` | `data/profiles/uploads/<slug>.json` |
+
+几个刻意的取舍:
+
+1. **模板由示例画像抄出来再清空**,而不是手写一份。画像模型是 `extra="forbid"`,
+   模板字段与引擎 Schema 差一个就是「填完才发现导不进去」;抄一份保证同构,
+   `test_profile_template_matches_schema_keys` 把这条钉死。
+2. **导入先全量校验,通过才写文件**。失败信息带回页面(JSON 解析错会给出行列号,
+   Schema 错会指出字段),不会在画像库里留下半成品——`_unique_path` 也会顺延,
+   同名导入不会覆盖上一份。
+3. **导入的画像单独放 `uploads/`**,与随仓库分发的示例画像分开,避免污染 `data/profiles/` 根目录。
+   代价是画像名必须带上子目录(`uploads/xxx.json`),所以路由按前缀匹配而不是按 `/` 分段切,
+   否则 `uploads/a.json` 会被误判成 `a.json` 的 `download` 动作。
+4. **页面里的数字仍走 S2 登记**,导入不会绕过 `docs/04 §5.3` 的数字隔离:
+   客户原文里的数字算客户提供,模型在 S7 里自己写出来的数字照样会被自检 8 拦下。
+
+模板下载(`/templates/profile.json`、`/templates/description.txt`、`/templates/example.json`)
+不需要模型,没配 `.env` 也能先把数据填起来。
+
 ## 3. 运行
 
 ```bash

@@ -27,3 +27,7 @@ out/
 work/
 outputs/
 *.log
+
+# 用户通过界面导入的画像与描述(属于客户数据,不进仓库)
+data/profiles/uploads/
+data/profiles/descriptions/uploads/

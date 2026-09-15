@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import os
 from pathlib import Path
 
 import pytest
@@ -473,5 +475,144 @@ def test_webapp_replays_persisted_run(profile: BusinessProfile, tmp_path: Path):
 
     landing = render_landing(tmp_path, Path("data/profiles"))
     assert result.run_id in landing
-    assert "跑一次诊断" in landing
+    assert "导入数据" in landing
+    assert "画像库" in landing
     assert "关键指标" in render_html(replayed)
+
+
+# --------------------------------------------------------------------------- #
+# 数据导入:模板 / 校验 / 落盘
+# --------------------------------------------------------------------------- #
+
+
+def test_profile_template_matches_schema_keys():
+    """模板字段必须和引擎 Schema 完全一致,否则用户填完才发现字段对不上。"""
+    from aoe.webapp import build_profile_template
+
+    demo = json.loads(
+        (REPO_ROOT / "data/profiles/retail_ecommerce_demo.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    template = build_profile_template(REPO_ROOT / "data/profiles")
+    assert set(template) - {"_填写说明"} == set(demo)
+    assert set(template["nodes"][0]) == set(demo["nodes"][0])
+    assert set(template["data_sources"][0]) == set(demo["data_sources"][0])
+    assert template["_填写说明"]
+
+
+def test_import_rejects_bad_payload_without_writing(tmp_path: Path):
+    from aoe.webapp import import_profile_json
+
+    with pytest.raises(ValueError) as excinfo:
+        import_profile_json("{ not json", profile_dir=tmp_path)
+    assert "JSON 解析失败" in str(excinfo.value)
+
+    with pytest.raises(ValueError):
+        import_profile_json("[1, 2, 3]", profile_dir=tmp_path)
+
+    # 模板占位内容还没替换完,必须被校验拦住,而不是写进画像库
+    from aoe.webapp import build_profile_template
+
+    with pytest.raises(ValueError):
+        import_profile_json(
+            json.dumps(build_profile_template(REPO_ROOT / "data/profiles")),
+            profile_dir=tmp_path,
+        )
+    assert not (tmp_path / "uploads").exists()
+
+
+def test_import_profile_roundtrip_strips_help_keys(tmp_path: Path):
+    from aoe.webapp import import_profile_json, strip_help_keys
+
+    payload = json.loads(
+        (REPO_ROOT / "data/profiles/retail_ecommerce_demo.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["_填写说明"] = ["导入时应被忽略"]
+    payload["nodes"][0]["_备注"] = "同样忽略"
+
+    target, profile = import_profile_json(json.dumps(payload), profile_dir=tmp_path)
+    assert target.parent.name == "uploads"
+    assert profile.company == payload["company"]
+    assert load_profile(target).company == profile.company
+    assert strip_help_keys({"_a": 1, "b": {"_c": 2, "d": 3}}) == {"b": {"d": 3}}
+
+
+def test_description_template_covers_intake_questions():
+    from aoe.webapp import DESCRIPTION_TEMPLATE
+
+    for section in ("企业基本情况", "业务流程", "数据情况", "目标与约束"):
+        assert section in DESCRIPTION_TEMPLATE
+    assert "每周投入多少工时" in DESCRIPTION_TEMPLATE
+
+
+def _demo_payload() -> dict:
+    return json.loads(
+        (REPO_ROOT / "data/profiles/retail_ecommerce_demo.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+
+def test_builtin_profiles_resolve_their_source_description():
+    """内置画像带着源描述,页面不能误报「没有源描述」而把重抽入口藏掉。"""
+    from aoe.webapp import resolve_description_path
+
+    root = REPO_ROOT / "data/profiles"
+    for name in ("manufacturing_extracted.json", "manufacturing_complete.json"):
+        assert resolve_description_path(name, root).exists(), name
+
+    # 没有源描述时返回占位路径,由调用方用 .exists() 判断,不要抛错
+    missing = resolve_description_path("retail_ecommerce_demo.json", root)
+    assert not missing.exists()
+
+
+def test_imported_profile_is_listed_and_named(tmp_path: Path):
+    """回归:导入的画像落在 uploads/ 下,列表与路由都要能按相对路径找到它。"""
+    from aoe.webapp import import_profile_json, list_profiles, profile_name
+
+    payload = _demo_payload()
+    target, _profile = import_profile_json(json.dumps(payload), profile_dir=tmp_path)
+    name = profile_name(target, tmp_path)
+    assert name == f"uploads/{payload['company']}.json"
+    assert [item["name"] for item in list_profiles(tmp_path)] == [name]
+    assert profile_name(tmp_path / "other.json", tmp_path) == "other.json"
+
+    # 相对目录 + 绝对画像(重抽后跳转就是这种组合)不能丢掉 uploads/ 前缀
+    relative_root = Path(os.path.relpath(tmp_path, Path.cwd()))
+    assert profile_name(target.resolve(), relative_root) == name
+
+    shipped = [item["name"] for item in list_profiles(REPO_ROOT / "data/profiles")]
+    assert "retail_ecommerce_demo.json" in shipped
+
+
+def test_webapp_serves_imported_profile(tmp_path: Path):
+    """回归:导入后跳转到 /profiles/uploads/xxx.json 曾经 404(只查了根目录)。"""
+    import threading
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+    from urllib.parse import quote
+
+    from aoe.webapp import Handler, import_profile_json, profile_name
+
+    payload = _demo_payload()
+    target, _profile = import_profile_json(json.dumps(payload), profile_dir=tmp_path)
+    handler = type(
+        "BoundHandler",
+        (Handler,),
+        {"run_dir": tmp_path / "runs", "profile_dir": tmp_path},
+    )
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{httpd.server_address[1]}"
+    try:
+        url = f"{base}/profiles/{quote(profile_name(target, tmp_path))}"
+        with urllib.request.urlopen(url, timeout=10) as response:
+            body = response.read().decode("utf-8")
+        assert response.status == 200
+        assert payload["company"] in body
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
