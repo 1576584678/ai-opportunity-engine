@@ -423,3 +423,31 @@ def test_scenarios_reference_known_capability_classes():
 def test_scenario_ids_are_unique():
     ids = [s.id for s in KB.scenarios]
     assert len(ids) == len(set(ids))
+
+
+# --------------------------------------------------------------------------- #
+# 运行目录:docs/05 §7 可回放
+# --------------------------------------------------------------------------- #
+
+
+def test_two_runs_in_same_second_go_to_different_dirs(
+    profile: BusinessProfile, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """同一秒内跑两次不能撞名,否则后一次会静默覆盖前一次的中间态。"""
+    from datetime import datetime as real_datetime
+
+    import aoe.pipeline as pipeline
+
+    class FrozenDatetime(real_datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return real_datetime(2026, 1, 1, 12, 0, 0, tzinfo=tz)
+
+    monkeypatch.setattr(pipeline, "datetime", FrozenDatetime)
+
+    first = run_pipeline(profile, KB, run_dir=tmp_path)
+    second = run_pipeline(profile, KB, run_dir=tmp_path)
+
+    assert first.run_id != second.run_id
+    assert (tmp_path / first.run_id / "s3_candidates.json").exists()
+    assert (tmp_path / second.run_id / "s3_candidates.json").exists()

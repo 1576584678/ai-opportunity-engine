@@ -42,6 +42,24 @@ def _persist(run_path: Path, name: str, payload) -> None:
         json.dump(_serialize(payload), fh, ensure_ascii=False, indent=2)
 
 
+def _allocate_run_dir(run_dir: Path) -> tuple[str, Path]:
+    """抢占一个唯一的运行目录。
+
+    run_id 是秒级 UTC 时间戳,同一秒内跑两次会撞名,后一次会静默覆盖前一次的中间态,
+    破坏 docs/05 §7 的可回放要求。这里用 mkdir(exist_ok=False) 原子抢占,撞名就顺延 -2、-3。
+    """
+    base = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    for index in range(1, 1000):
+        run_id = base if index == 1 else f"{base}-{index}"
+        path = run_dir / run_id
+        try:
+            path.mkdir(parents=True, exist_ok=False)
+        except FileExistsError:
+            continue
+        return run_id, path
+    raise RuntimeError(f"无法在 {run_dir} 分配运行目录:{base} 下已有过多同名运行")
+
+
 def run_pipeline(
     profile: BusinessProfile,
     kb: KnowledgeBase | None = None,
@@ -59,8 +77,11 @@ def run_pipeline(
             + ";".join(profile.missing)
         )
 
-    run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    run_path = (run_dir / run_id) if run_dir else None
+    if run_dir:
+        run_id, run_path = _allocate_run_dir(run_dir)
+    else:
+        run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        run_path = None
 
     # ---- S3 候选生成 ----------------------------------------------------- #
     candidates, unmatched = generate_candidates(profile, kb)
